@@ -47,37 +47,6 @@ sara/fix/AUTH-89-token-expiry
 
 ---
 
-## Setup (One-time)
-```bash
-npm i -D husky @commitlint/cli @commitlint/config-conventional
-npx husky install
-npx husky add .husky/commit-msg 'npx commitlint --edit "$1"'
-```
-
-**`commitlint.config.js`**
-```js
-module.exports = {
-  parserPreset: {
-    parserOpts: {
-      headerPattern: /^(\w+)\/(feat|fix|hotfix|refactor|chore|docs|test)\((.+)\):\s.+$/,
-      headerCorrespondence: ['dev', 'type', 'scope']
-    }
-  },
-  rules: {
-    'header-match-pattern': [2, 'always']
-  },
-  plugins: [{
-    rules: {
-      'header-match-pattern': ({ header }) =>
-        [/^\w+\/(feat|fix|hotfix|refactor|chore|docs|test)\(\w+\):\s.+/.test(header),
-        'Format must be: <nick>/<prefix>(<scope>): <description>']
-    }
-  }]
-};
-```
-
----
-
 ## CI — `.github/workflows/lint-commits.yml`
 ```yaml
 name: Lint Commits
