@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_medicine_form" model="ir.ui.view">
+        <field name="name">medicine.form.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='options']" position="inside">
+                <span class="d-inline-block">
+                    <field name="is_medicine"/>
+                    <label for="is_medicine"/>
+                </span>
+            </xpath>
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page name="pharmaceutical_info" string="Pharmaceutical Info" invisible="not is_medicine">
+                    <group>
+                        <group string="Identification">
+                            <field name="medicine_category_id" domain="[('parent_id.name', '=', 'Medicine')]"/>
+                            <field name="inn_name"/>
+                            <field name="brand_name"/>
+                            <field name="atc_code"/>
+                        </group>
+                        <group string="Form &amp; Administration">
+                            <field name="dosage_form"/>
+                            <field name="strength"/>
+                            <field name="route_of_administration"/>
+                        </group>
+                        <group string="Regulatory &amp; Tracking">
+                            <field name="prescription_status"/>
+                            <field name="is_controlled_substance" invisible="1"/>
+                            <field name="requires_double_check"/>
+                            <field name="registration_authority"/>
+                            <field name="registration_number"/>
+                        </group>
+                        <group string="Manufacturing &amp; Storage">
+                            <field name="manufacturer_name"/>
+                            <field name="manufacturer_country"/>
+                            <field name="storage_condition"/>
+                            <field name="shelf_life_months"/>
+                        </group>
+                    </group>
+                    <group string="Ingredients">
+                        <field name="active_ingredient"/>
+                        <field name="excipients"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_pharmacy_medicine" model="ir.actions.act_window">
+        <field name="name">Medicines</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_medicine', '=', True)]</field>
+        <field name="context">{'default_is_medicine': True}</field>
+    </record>
+
+    <!-- <menuitem id="menu_pharmacy_medicine_list"
+              name="Medicines"
+              parent="menu_medicine_products"
+              action=""
+              sequence="10"/> -->
+</odoo>
