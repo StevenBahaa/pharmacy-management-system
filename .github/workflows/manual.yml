@@ -1,0 +1,463 @@
+name: 🏥 Pharmacy Management — CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Nightly build at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options: [staging, production]
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  ODOO_VERSION: "16.0"
+  POSTGRES_VERSION: "14"
+  MODULE_NAME: pharmacy_management
+
+# ─────────────────────────────────────────────
+# JOBS
+# ─────────────────────────────────────────────
+jobs:
+
+  # ── 1. CODE QUALITY ──────────────────────────
+  lint:
+    name: 🔍 Lint & Format Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: 📦 Install lint dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flake8 black isort pylint
+
+      - name: 🖤 Black — code formatting
+        run: black --check --diff .
+
+      - name: 📦 isort — import ordering
+        run: isort --check-only --diff .
+
+      - name: 🔎 Flake8 — style enforcement
+        run: |
+          flake8 . \
+            --max-line-length=120 \
+            --exclude=.git,__pycache__,migrations \
+            --format=default
+
+      - name: 🧠 Pylint — static analysis
+        run: |
+          pylint ${{ env.MODULE_NAME }}/ \
+            --disable=C0114,C0115,C0116 \
+            --max-line-length=120 \
+            --exit-zero
+
+  # ── 2. SECURITY SCAN ─────────────────────────
+  security:
+    name: 🔐 Security Scan
+    runs-on: ubuntu-22.04
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: 📦 Install Bandit & Safety
+        run: pip install bandit safety
+
+      - name: 🛡️ Bandit — security linting
+        run: |
+          bandit -r ${{ env.MODULE_NAME }}/ \
+            -ll \
+            -f json \
+            -o bandit-report.json || true
+
+      - name: 📋 Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+      - name: 🔒 Safety — dependency vulnerability check
+        run: safety check --full-report
+
+  # ── 3. UNIT TESTS ────────────────────────────
+  test:
+    name: 🧪 Unit & Integration Tests
+    runs-on: ubuntu-22.04
+    needs: [lint]
+
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: pharmacy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: 📦 Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libpq-dev \
+            libldap2-dev \
+            libsasl2-dev \
+            libxml2-dev \
+            libxslt1-dev \
+            libjpeg-dev \
+            zlib1g-dev \
+            node-less \
+            wkhtmltopdf
+
+      - name: 📦 Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov coverage
+
+      - name: 🔧 Configure Odoo test environment
+        run: |
+          cat > odoo.test.conf << EOF
+          [options]
+          db_host = localhost
+          db_port = 5432
+          db_user = odoo
+          db_password = odoo
+          db_name = pharmacy_test
+          addons_path = addons,${{ env.MODULE_NAME }}
+          logfile = /dev/stdout
+          log_level = warn
+          EOF
+
+      - name: 🏗️ Initialize test database
+        run: |
+          python odoo-bin \
+            --config=odoo.test.conf \
+            -d pharmacy_test \
+            -i ${{ env.MODULE_NAME }} \
+            --stop-after-init \
+            --without-demo=False
+
+      - name: 🧪 Run tests with coverage
+        run: |
+          python odoo-bin \
+            --config=odoo.test.conf \
+            -d pharmacy_test \
+            --test-enable \
+            --test-tags=${{ env.MODULE_NAME }} \
+            --stop-after-init \
+            --log-level=test
+
+      - name: 📊 Generate coverage report
+        run: |
+          coverage report --fail-under=70
+          coverage xml -o coverage.xml
+
+      - name: 📋 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml
+          flags: unittests
+          fail_ci_if_error: false
+
+      - name: 📋 Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            *.log
+            coverage.xml
+
+  # ── 4. BUILD & PACKAGE ───────────────────────
+  build:
+    name: 📦 Build & Package Module
+    runs-on: ubuntu-22.04
+    needs: [test, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      artifact-name: ${{ steps.version.outputs.artifact-name }}
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🏷️ Extract version from manifest
+        id: version
+        run: |
+          VERSION=$(python -c "
+          import ast, sys
+          with open('${{ env.MODULE_NAME }}/__manifest__.py') as f:
+              m = ast.literal_eval(f.read())
+          print(m.get('version', '0.0.1'))
+          ")
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "artifact-name=${{ env.MODULE_NAME }}-${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "📦 Building version: ${VERSION} (${SHORT_SHA})"
+
+      - name: 🗜️ Package module
+        run: |
+          zip -r "${{ steps.version.outputs.artifact-name }}.zip" \
+            ${{ env.MODULE_NAME }}/ \
+            requirements.txt \
+            README.md \
+            --exclude "**/__pycache__/*" \
+            --exclude "**/*.pyc" \
+            --exclude "**/.git/*" \
+            --exclude "**/tests/*"
+
+      - name: 📋 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.artifact-name }}
+          path: "*.zip"
+          retention-days: 30
+
+  # ── 5. DEPLOY — STAGING ──────────────────────
+  deploy-staging:
+    name: 🚀 Deploy → Staging
+    runs-on: ubuntu-22.04
+    needs: [build]
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⬇️ Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+
+      - name: 🔑 Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
+
+      - name: 📤 Upload module to staging server
+        run: |
+          scp -o StrictHostKeyChecking=no \
+            ${{ needs.build.outputs.artifact-name }}.zip \
+            ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:/tmp/
+
+      - name: 🔄 Deploy & restart on staging
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'ENDSSH'
+            set -e
+
+            echo "📦 Extracting module..."
+            cd /opt/odoo/addons
+            sudo unzip -o /tmp/${{ needs.build.outputs.artifact-name }}.zip
+
+            echo "🔄 Upgrading Odoo module..."
+            sudo python /opt/odoo/odoo-bin \
+              --config=/etc/odoo/odoo.conf \
+              -d ${{ secrets.STAGING_DB }} \
+              -u ${{ env.MODULE_NAME }} \
+              --stop-after-init
+
+            echo "♻️ Restarting Odoo service..."
+            sudo systemctl restart odoo
+
+            echo "✅ Staging deployment complete!"
+          ENDSSH
+
+      - name: 🏥 Health check — staging
+        run: |
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ vars.STAGING_URL }}/web/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check failed with status: $STATUS"
+            exit 1
+          fi
+          echo "✅ Staging is healthy (HTTP $STATUS)"
+
+  # ── 6. DEPLOY — PRODUCTION ───────────────────
+  deploy-production:
+    name: 🌐 Deploy → Production
+    runs-on: ubuntu-22.04
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⬇️ Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+
+      - name: 🔑 Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: 🗄️ Backup database before deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'ENDSSH'
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            pg_dump \
+              -U odoo \
+              -h localhost \
+              ${{ secrets.PROD_DB }} \
+              | gzip > /opt/odoo/backups/pre-deploy-${TIMESTAMP}.sql.gz
+            echo "✅ Backup saved: pre-deploy-${TIMESTAMP}.sql.gz"
+          ENDSSH
+
+      - name: 📤 Upload module to production server
+        run: |
+          scp -o StrictHostKeyChecking=no \
+            ${{ needs.build.outputs.artifact-name }}.zip \
+            ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }}:/tmp/
+
+      - name: 🔄 Deploy & restart on production
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'ENDSSH'
+            set -e
+
+            echo "📦 Extracting module..."
+            cd /opt/odoo/addons
+            sudo unzip -o /tmp/${{ needs.build.outputs.artifact-name }}.zip
+
+            echo "🔄 Upgrading Odoo module..."
+            sudo python /opt/odoo/odoo-bin \
+              --config=/etc/odoo/odoo.conf \
+              -d ${{ secrets.PROD_DB }} \
+              -u ${{ env.MODULE_NAME }} \
+              --stop-after-init
+
+            echo "♻️ Restarting Odoo service..."
+            sudo systemctl restart odoo
+
+            echo "✅ Production deployment complete!"
+          ENDSSH
+
+      - name: 🏥 Health check — production
+        run: |
+          sleep 20
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ vars.PRODUCTION_URL }}/web/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Production health check failed: $STATUS"
+            exit 1
+          fi
+          echo "✅ Production is healthy (HTTP $STATUS)"
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: "v${{ needs.build.outputs.version }} — Pharmacy Management"
+          body: |
+            ## 🏥 Pharmacy Management System
+
+            **Version:** `${{ needs.build.outputs.version }}`
+            **Deployed:** ${{ github.event.head_commit.timestamp }}
+            **Commit:** ${{ github.sha }}
+
+            ### Changes
+            ${{ github.event.head_commit.message }}
+          files: "*.zip"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── 7. NOTIFY ────────────────────────────────
+  notify:
+    name: 📣 Notify Team
+    runs-on: ubuntu-22.04
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+      - name: ✅ Notify on success
+        if: ${{ needs.deploy-production.result == 'success' || needs.deploy-staging.result == 'success' }}
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "✅ *Pharmacy Management* deployed successfully to *${{ github.ref_name }}*",
+              "attachments": [{
+                "color": "good",
+                "fields": [
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Commit", "value": "${{ github.sha }}", "short": true },
+                  { "title": "Author", "value": "${{ github.actor }}", "short": true }
+                ]
+              }]
+            }'
+
+      - name: ❌ Notify on failure
+        if: ${{ needs.deploy-production.result == 'failure' || needs.deploy-staging.result == 'failure' }}
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "text": "❌ *Pharmacy Management* deployment FAILED on *${{ github.ref_name }}*",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Author", "value": "${{ github.actor }}", "short": true },
+                  { "title": "Run", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false }
+                ]
+              }]
+            }'
