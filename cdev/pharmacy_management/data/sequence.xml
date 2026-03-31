@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id='seq_pharmacy_prescription' model='ir.sequence'>
+        <field name='name'>Pharmacy Prescription Sequence</field>
+        <field name='code'>pharmacy.prescription.sequence</field>
+        <field name='prefix'>PH/</field>
+        <field name='padding'>3</field>
+        <field name="number_increment">1</field>
+    </record>
+</odoo>
