@@ -1,12 +1,11 @@
-from odoo import models , fields , api
-from odoo.exceptions import UserError , ValidationError
+from odoo import models, fields, api
+
 class PrescriptionLine(models.Model):
     _name='prescription.line'
     _description='Prescription Line'
     
-
     prescription_id = fields.Many2one(comodel_name='prescription' , string='Prescription')
-    product_id = fields.Many2one(comodel_name='product.template' , string='Product')
+    product_id = fields.Many2one(comodel_name='product.template' , string='Product', domain="[('is_medicine', '=', True)]")
     quantity =fields.Integer(string='Quantity')
     price_unit= fields.Float(string= 'Uint Price' , related='product_id.list_price' , readonly=True , store=False)
     subtotal = fields.Float(string='Total' , compute='_compute_subtotal' , store=True)

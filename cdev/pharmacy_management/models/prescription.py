@@ -1,6 +1,5 @@
-from odoo import models , fields , api
-from odoo.exceptions import UserError , ValidationError
-
+from odoo import models, fields
+from odoo.exceptions import UserError
 
 class Prescription(models.Model):
     _name='prescription'
@@ -8,7 +7,7 @@ class Prescription(models.Model):
     _inherit=['mail.thread' , 'mail.activity.mixin']
 
     name=fields.Char(string='Name' , readonly=True , default='New') 
-
+    
     patient_id = fields.Many2one(
     comodel_name='res.partner',
     string='Patient',

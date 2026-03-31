@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Root Medicine Category -->
+        <record id="product_category_medicine_root" model="product.category">
+            <field name="name">Medicine</field>
+            <field name="is_medicine_category" eval="True"/>
+        </record>
+
+        <!-- Subcategories -->
+        <record id="product_category_analgesics" model="product.category">
+            <field name="name">Analgesics</field>
+            <field name="parent_id" ref="product_category_medicine_root"/>
+            <field name="is_medicine_category" eval="True"/>
+            <field name="code">N02</field>
+        </record>
+
+        <record id="product_category_antibiotics" model="product.category">
+            <field name="name">Antibiotics</field>
+            <field name="parent_id" ref="product_category_medicine_root"/>
+            <field name="is_medicine_category" eval="True"/>
+            <field name="code">J01</field>
+            <field name="requires_prescription" eval="True"/>
+        </record>
+
+        <record id="product_category_cardiovascular" model="product.category">
+            <field name="name">Cardiovascular</field>
+            <field name="parent_id" ref="product_category_medicine_root"/>
+            <field name="is_medicine_category" eval="True"/>
+            <field name="code">C</field>
+            <field name="requires_prescription" eval="True"/>
+        </record>
+
+        <record id="product_category_psycholeptics" model="product.category">
+            <field name="name">Psycholeptics (Controlled)</field>
+            <field name="parent_id" ref="product_category_medicine_root"/>
+            <field name="is_medicine_category" eval="True"/>
+            <field name="code">N05</field>
+            <field name="requires_prescription" eval="True"/>
+            <field name="is_controlled" eval="True"/>
+        </record>
+    </data>
+</odoo>
