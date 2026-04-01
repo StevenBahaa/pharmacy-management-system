@@ -24,6 +24,7 @@
                             <field name="dosage_form"/>
                             <field name="strength"/>
                             <field name="route_of_administration"/>
+                            <field name="x_requires_prescription"/>
                         </group>
                         <group string="Regulatory &amp; Tracking">
                             <field name="prescription_status"/>
@@ -37,6 +38,8 @@
                             <field name="manufacturer_country"/>
                             <field name="storage_condition"/>
                             <field name="shelf_life_months"/>
+                            <field name="x_min_stock_qty"/>
+                            <field name="x_expiry_date" required="is_medicine"/>
                         </group>
                     </group>
                     <group string="Ingredients">
@@ -48,13 +51,59 @@
         </field>
     </record>
 
+    <record id="view_product_list_inherit_medicine" model="ir.ui.view">
+        <field name="name">product.template.list.inherit.medicine</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-danger">
+                    is_medicine and qty_available &lt; x_min_stock_qty
+                </attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_search_inherit_medicine" model="ir.ui.view">
+        <field name="name">product.template.search.inherit.medicine</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//search" position="inside">
+
+                <filter name="low_stock"
+                    string="Low Stock"
+                    domain="[('x_is_low_stock', '=', True)]"/>
+
+                    <filter name="requires_prescription"
+                        string="Requires Prescription"
+                        domain="[('x_requires_prescription', '=', True)]"/>
+
+                    <group expand="0" string="Group By">
+                        <filter name="group_by_medicine_category"
+                                string="Medicine Category"
+                                context="{'group_by': 'medicine_category_id'}"/>
+                    </group>
+
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_pharmacy_medicine" model="ir.actions.act_window">
         <field name="name">Medicines</field>
         <field name="res_model">product.template</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('is_medicine', '=', True)]</field>
         <field name="context">{'default_is_medicine': True}</field>
     </record>
+
+        <!-- Products -->
+    <menuitem id="menu_medicine_products"
+              name="Medicine Products"
+              parent="menu_pharmacy_root"
+              action="action_pharmacy_medicine"
+              sequence="11"/>
 
     <!-- <menuitem id="menu_pharmacy_medicine_list"
               name="Medicines"
