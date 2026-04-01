@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Wizard View -->
+    <record id="view_prescription_export_wizard_form" model="ir.ui.view">
+        <field name="name">prescription.export.wizard.form</field>
+        <field name="model">prescription.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Export Prescriptions to Excel">
+                <sheet>
+                    <group string="Date Range">
+                        <field name="from_date"/>
+                        <field name="to_date"/>
+                    </group>
+                    <group string="Filter">
+                        <field name="state_filter"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_export"
+                            string="Export to Excel"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_prescription_export_wizard" model="ir.actions.act_window">
+        <field name="name">Export Prescriptions to Excel</field>
+        <field name="res_model">prescription.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="pharmacy_management.model_prescription"/>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <!-- Report Action -->
+    <record id="action_report_prescription_xlsx" model="ir.actions.report">
+        <field name="name">Prescriptions Excel Report</field>
+        <field name="model">prescription.export.wizard</field>
+        <field name="report_type">xlsx</field>
+        <field name="report_name">pharmacy_management.report_prescription_xlsx</field>
+        <field name="report_file">Prescriptions_Export</field>
+    </record>
+
+</odoo>

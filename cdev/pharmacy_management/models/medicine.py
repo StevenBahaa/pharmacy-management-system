@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError , UserError
+from datetime import date
 import re
 
 DOSAGE_FORM_SELECTION = [
@@ -257,6 +258,36 @@ class ProductTemplate(models.Model):
     )
 
     requires_double_check = fields.Boolean(string='Requires Double Check')
+
+
+    x_min_stock_qty = fields.Float(string='Minimum Stock Quantity')
+    x_requires_prescription = fields.Boolean(string='Requires Prescription')
+    x_expiry_date = fields.Date(string='Expiry Date')
+    x_is_low_stock = fields.Boolean(
+        compute="_compute_is_low_stock",
+        store=True
+    )
+
+    @api.constrains('x_min_stock_qty')
+    def _check_min_stock_qty(self):
+        for rec in self :
+            if rec.x_min_stock_qty and rec.x_min_stock_qty < 0 :
+                raise UserError("The Minimum Stock Quantity should not be negative")
+
+
+    @api.constrains('x_expiry_date')
+    def _check_expiry_date(self):
+        today = date.today()
+        for rec in self:
+            if rec.x_expiry_date and rec.x_expiry_date < today : 
+                raise UserError("The expire date cannot be in the past")
+
+    @api.depends('qty_available', 'x_min_stock_qty')
+    def _compute_is_low_stock(self):
+        for rec in self:
+            rec.x_is_low_stock = (
+                rec.is_medicine and rec.qty_available < rec.x_min_stock_qty
+            )
 
 
     @api.depends('prescription_status')

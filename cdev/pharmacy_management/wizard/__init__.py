@@ -1,1 +1,1 @@
-from . import export_excel_wizard
+from . import export_excel_wizard , export_excel_template

@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields ,api
 from odoo.exceptions import UserError
 
 class Prescription(models.Model):
@@ -36,27 +36,100 @@ class Prescription(models.Model):
         string='Medicine Lines'
     )
 
+    sale_order_id = fields.Many2one(
+        comodel_name='sale.order',
+        string='Sale Order',
+        readonly=True
+    )
+
+    @api.model
+    def create(self, vals_list):
+        if vals_list.get('name', 'New') == 'New':
+            vals_list['name'] = self.env['ir.sequence'].next_by_code(
+                'pharmacy.prescription.sequence'
+            ) or 'New'
+        return super().create(vals_list)
+
+
+    @api.depends('line_ids.subtotal')
+    def _compute_total_amount(self):
+        for rec in self:
+            rec.total_amount = sum(rec.line_ids.mapped('subtotal'))
+
     def action_confirm(self):
-        for rec in self:    
+        for rec in self:
             if not rec.line_ids:
                 raise UserError("You cannot confirm a prescription with no medicines.")
-            
+
             for line in rec.line_ids:
                 if not line.product_id:
                     raise UserError("All lines must have a medicine selected.")
-                
                 if line.quantity <= 0:
                     raise UserError(
                         f"Medicine '{line.product_id.name}' has an invalid quantity."
                     )
-                
-                if line.quantity > line.product_id.qty_available:
+                available = line.product_id.product_variant_id.qty_available
+                if line.quantity > available:
                     raise UserError(
                         f"Not enough stock for '{line.product_id.name}'.\n"
                         f"Requested: {line.quantity} | "
-                        f"Available: {line.product_id.qty_available}"
+                        f"Available: {available}"
                     )
-        self.state = 'confirmed'
+
+            warehouse = self.env['stock.warehouse'].search(
+                [('company_id', '=', self.env.company.id)],
+                limit=1
+            )
+
+            sale_order = self.env['sale.order'].create({
+                'partner_id': rec.patient_id.id,
+                'warehouse_id': warehouse.id,
+                'order_line': [
+                    (0, 0, {
+                        'product_id': line.product_id.product_variant_id.id,
+                        'product_uom_qty': line.quantity,
+                        'price_unit': line.price_unit,
+                    }) for line in rec.line_ids
+                ]
+            })
+
+            # Confirm sale order → generates delivery in Ready state
+            sale_order.action_confirm()
+            rec.sale_order_id = sale_order.id
+            rec.state = 'confirmed'
+
 
     def action_deliver(self):
-        self.state = 'delivered'
+        for rec in self:
+            if rec.state != 'confirmed':
+                raise UserError("Only confirmed prescriptions can be delivered.")
+
+            if not rec.sale_order_id:
+                raise UserError("No sale order linked to this prescription.")
+
+            picking = rec.sale_order_id.picking_ids.filtered(
+                lambda p: p.state not in ('done', 'cancel')
+            )
+
+            if not picking:
+                raise UserError("No pending delivery found.")
+
+            for pick in picking:
+                for move in pick.move_ids:
+                    line = rec.line_ids.filtered(
+                        lambda l: l.product_id.product_variant_id == move.product_id
+                    )[:1]
+
+                    move.quantity = move.product_uom_qty
+
+                    if move.product_id.tracking != 'none' and line and line.lot_id:
+                        move.move_line_ids.write({'lot_id': line.lot_id.id})
+                    elif move.product_id.tracking != 'none' and not line.lot_id:
+                        raise UserError(
+                            f"Please select a Batch Number for '{move.product_id.name}' "
+                            f"before delivering."
+                        )
+
+                pick.with_context(skip_immediate=True).button_validate()
+
+            rec.state = 'delivered'
