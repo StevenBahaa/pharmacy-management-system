@@ -262,7 +262,6 @@ class ProductTemplate(models.Model):
 
     x_min_stock_qty = fields.Float(string='Minimum Stock Quantity')
     x_requires_prescription = fields.Boolean(string='Requires Prescription')
-    x_expiry_date = fields.Date(string='Expiry Date')
     x_is_low_stock = fields.Boolean(
         compute="_compute_is_low_stock",
         store=True

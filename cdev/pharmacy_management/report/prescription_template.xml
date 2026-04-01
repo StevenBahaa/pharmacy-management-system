@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ── QWeb Template ─────────────────────────────────────────────── -->
+    <template id="report_prescription_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="rec">
+                <t t-call="web.basic_layout">
+                    <t t-set="o" t-value="rec"/>
+                    <div class="page">
+                        <!-- Header -->
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h1 style="color: #1F7A4A; margin: 0;">
+                                Al-Shifa Pharmacy
+                            </h1>
+                            <p style="margin: 4px 0; color: #666;">
+                                Prescription Receipt
+                            </p>
+                            <hr style="border-color: #1F7A4A;"/>
+                        </div>
+
+                        <!-- Prescription Info -->
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                            <div>
+                                <strong>Reference:</strong>
+                                <span t-field="rec.name"/><br/>
+                                <strong>Date:</strong>
+                                <span t-field="rec.date"/><br/>
+                                <strong>Status:</strong>
+                                <span t-field="rec.state"/>
+                            </div>
+                            <div style="text-align: right;">
+                                <strong>Patient:</strong>
+                                <span t-field="rec.patient_id.name"/><br/>
+                                <strong>Doctor:</strong>
+                                <span t-field="rec.doctor_id.name"/><br/>
+                            </div>
+                        </div>
+
+                        <!-- Medicine Table -->
+                        <table class="table table-bordered" style="width: 100%; margin-bottom: 20px;">
+                            <thead style="background-color: #1F7A4A; color: white;">
+                                <tr>
+                                    <th>Medicine</th>
+                                    <th>Lot / Batch</th>
+                                    <th>Expiry Date</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-right">Unit Price</th>
+                                    <th class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="rec.line_ids" t-as="line">
+                                    <tr>
+                                        <td>
+                                            <span t-field="line.product_id"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="line.lot_id"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="line.lot_id.expiration_date.date() if line.lot_id and line.lot_id.expiration_date else ''"/>
+                                        </td>
+                                        <td class="text-center">
+                                            <span t-field="line.quantity"/>
+                                        </td>
+                                        <td class="text-right">
+                                            <span t-field="line.price_unit"
+                                                  t-options='{"widget": "monetary", "display_currency": rec.env.company.currency_id}'/>
+                                        </td>
+                                        <td class="text-right">
+                                            <span t-field="line.subtotal"
+                                                  t-options='{"widget": "monetary", "display_currency": rec.env.company.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+
+                            <!-- Grand Total -->
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="text-right">
+                                        <strong>Grand Total</strong>
+                                    </td>
+                                    <td class="text-right">
+                                        <strong>
+                                            <span t-field="rec.total_amount"
+                                                  t-options='{"widget": "monetary", "display_currency": rec.env.company.currency_id}'/>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- Footer — Pharmacist + Signature -->
+                        <div style="margin-top: 40px; display: flex; justify-content: space-between;">0
+                            <div style="text-align: right; color: #666; font-size: 10px;">
+                                <p>Generated by Al-Shifa Pharmacy Management System</p>
+                                <p>Odoo 18</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ── Report Action ──────────────────────────────────────────────── -->
+    <record id="action_report_prescription_receipt" model="ir.actions.report">
+        <field name="name">Prescription Receipt</field>
+        <field name="model">prescription</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pharmacy_management.report_prescription_receipt</field>
+        <field name="report_file">Prescription_Receipt</field>
+        <field name="binding_model_id" ref="pharmacy_management.model_prescription"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

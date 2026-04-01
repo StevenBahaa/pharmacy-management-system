@@ -83,7 +83,7 @@ class Prescription(models.Model):
 
             sale_order = self.env['sale.order'].create({
                 'partner_id': rec.patient_id.id,
-                'warehouse_id': warehouse.id,
+
                 'order_line': [
                     (0, 0, {
                         'product_id': line.product_id.product_variant_id.id,
@@ -133,3 +133,9 @@ class Prescription(models.Model):
                 pick.with_context(skip_immediate=True).button_validate()
 
             rec.state = 'delivered'
+
+    def action_print_invoice(self):
+        self.ensure_one()
+        return self.env.ref(
+            'pharmacy_management.action_report_prescription_receipt'
+        ).report_action(self)

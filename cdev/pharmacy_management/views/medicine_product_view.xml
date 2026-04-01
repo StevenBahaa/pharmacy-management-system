@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!-- Simple Expiry Dashboard Action -->
-    <record id="action_dashboard_expiry" model="ir.actions.act_window">
+    <!-- <record id="action_dashboard_expiry" model="ir.actions.act_window">
         <field name="name">Medicine Expiry Dashboard</field>
         <field name="res_model">stock.lot</field>
         <field name="view_mode">list,form</field>
@@ -13,5 +13,5 @@
               name="Expiry Dashboard Overview"
               parent="menu_medicine_expiry"
               action="action_dashboard_expiry"
-              sequence="10"/>
+              sequence="10"/> -->
 </odoo>

@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    
+    <record id="ir_cron_check_medicine_expiry" model="ir.cron">
+        <field name="name">Check Medicine Expiry Daily</field>
+        <field name="model_id" ref="stock.model_stock_lot"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_check_medicine_expiry()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now()).strftime('%Y-%m-%d 00:00:00')"/>
+        <field name="active">True</field>
+    </record>
 </odoo>

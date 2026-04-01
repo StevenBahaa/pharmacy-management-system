@@ -4,14 +4,6 @@
                 name='Al-Shifa Pharmacy'
                 sequence="10"/>
 
-
-
-    <!-- Categories -->
-    <menuitem id="menu_medicine_categories"
-              name="Medicine Categories"
-              parent="menu_pharmacy_root"
-              sequence="12"/>
-
     <!-- Expiry Dashboard
     <menuitem id="menu_medicine_expiry"
               name="Expiry Dashboard"
