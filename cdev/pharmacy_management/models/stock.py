@@ -1,7 +1,6 @@
 from datetime import timedelta
-
-from odoo import models, fields, api, _
-
+from odoo import models, fields, api, _, exceptions
+from odoo.exceptions import ValidationError
 
 class StockLot(models.Model):
     _inherit = 'stock.lot'
@@ -29,15 +28,25 @@ class StockLot(models.Model):
     @api.depends('expiration_date')
     def _compute_expiry_flags(self):
         today = fields.Date.today()
+        
         warning_limit = today + timedelta(days=30)
 
         for rec in self:
             rec.x_is_expired = bool(
-                rec.expiration_date and rec.expiration_date < today
+                rec.expiration_date.date() and rec.expiration_date.date() < today
             )
             rec.x_is_expiring_soon = bool(
-                rec.expiration_date and today <= rec.expiration_date <= warning_limit
+                rec.expiration_date.date() and today <= rec.expiration_date.date() <= warning_limit
             )
+
+    @api.constrains('expiration_date')
+    def _check_expiration_date_not_in_past(self):
+        today = fields.Date.today()
+        for rec in self:
+            if rec.expiration_date and fields.Date.to_date(rec.expiration_date) < today:
+                raise ValidationError(_(
+                    "The expiry date cannot be in the past."
+                ))
 
     @api.model
     def cron_check_medicine_expiry(self):
@@ -134,3 +143,5 @@ class StockLot(models.Model):
                         })
 
                 lot.x_expiry_notified = True
+
+                

@@ -46,6 +46,13 @@
                             <field name="date" readonly="state != 'draft'"/>
                             <field name="total_amount" readonly="1"/>
                         </group>
+                        <group string="Financial Information">
+                            <field name="insurance_program_id" readonly="1"/>
+                            <field name="discount"             readonly="1"/>
+                            <field name="total_amount"         readonly="1"/>
+                            <field name="amount_discount"      readonly="1"/>
+                            <field name="total_after_discount" readonly="1"/>
+                        </group>
                     </group>
                     <notebook>
                         <page name="lines" string="Medicine Lines">
@@ -54,8 +61,9 @@
                                     <field name="product_id" required="1"/>
                                     <field name="lot_id" domain="[('product_id.product_tmpl_id', '=', product_id)]"/>
                                     <field name="quantity"/>
-                                    <field name="price_unit"/>
-                                    <field name="subtotal"/>
+                                    <field name="price_unit"  readonly="1"/>
+                                    <field name="discount"    readonly="1"/>
+                                    <field name="subtotal"    readonly="1"/>
                                 </list>
                             </field>
                         </page>

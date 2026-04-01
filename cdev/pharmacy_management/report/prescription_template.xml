@@ -45,6 +45,7 @@
                                     <th>Expiry Date</th>
                                     <th class="text-center">Qty</th>
                                     <th class="text-right">Unit Price</th>
+                                    <th class="text-right">Discount</th>
                                     <th class="text-right">Subtotal</th>
                                 </tr>
                             </thead>
@@ -66,6 +67,9 @@
                                         <td class="text-right">
                                             <span t-field="line.price_unit"
                                                   t-options='{"widget": "monetary", "display_currency": rec.env.company.currency_id}'/>
+                                        </td>
+                                        <td class="text-right">
+                                            <span t-esc="str(line.discount) + '%'"/>
                                         </td>
                                         <td class="text-right">
                                             <span t-field="line.subtotal"

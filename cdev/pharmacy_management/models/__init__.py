@@ -1,1 +1,1 @@
-from . import medicine, prescription_line, prescription, stock
+from . import medicine, prescription_line, prescription, stock , insurance_program , res_partner
