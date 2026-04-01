@@ -29,15 +29,22 @@
         </field>
     </record>
 
+<!-- Server Action to open the wizard -->
+<record id="action_open_prescription_export_server" model="ir.actions.server">
+    <field name="name">Export Prescriptions to Excel</field>
+    <field name="model_id" ref="pharmacy_management.model_prescription"/>
+    <field name="state">code</field>
+    <field name="code">
+action = env.ref('pharmacy_management.action_prescription_export_wizard').read()[0]
+    </field>
+</record>
+
     <!-- Wizard Action -->
     <record id="action_prescription_export_wizard" model="ir.actions.act_window">
         <field name="name">Export Prescriptions to Excel</field>
         <field name="res_model">prescription.export.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="binding_model_id" ref="pharmacy_management.model_prescription"/>
-        <field name="binding_type">action</field>
-        <field name="binding_view_types">list</field>
     </record>
 
     <!-- Report Action -->
@@ -48,5 +55,12 @@
         <field name="report_name">pharmacy_management.report_prescription_xlsx</field>
         <field name="report_file">Prescriptions_Export</field>
     </record>
+
+    <!-- Menu item under Pharmacy root -->
+    <menuitem id="menu_export_prescriptions_excel"
+            name="Export Prescriptions to Excel"
+            parent="menu_pharmacy_root"
+            action="action_prescription_export_wizard"
+            sequence="50"/>
 
 </odoo>

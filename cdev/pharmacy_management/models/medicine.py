@@ -262,7 +262,6 @@ class ProductTemplate(models.Model):
 
     x_min_stock_qty = fields.Float(string='Minimum Stock Quantity')
     x_requires_prescription = fields.Boolean(string='Requires Prescription')
-    x_expiry_date = fields.Date(string='Expiry Date')
     x_is_low_stock = fields.Boolean(
         compute="_compute_is_low_stock",
         store=True
@@ -274,13 +273,6 @@ class ProductTemplate(models.Model):
             if rec.x_min_stock_qty and rec.x_min_stock_qty < 0 :
                 raise UserError("The Minimum Stock Quantity should not be negative")
 
-
-    @api.constrains('x_expiry_date')
-    def _check_expiry_date(self):
-        today = date.today()
-        for rec in self:
-            if rec.x_expiry_date and rec.x_expiry_date < today : 
-                raise UserError("The expire date cannot be in the past")
 
     @api.depends('qty_available', 'x_min_stock_qty')
     def _compute_is_low_stock(self):
