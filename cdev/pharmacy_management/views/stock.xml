@@ -1,15 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Action — shows expired lots only -->
+
+    <!-- Expired list view -->
+    <record id="view_expired_medicine_lots_list" model="ir.ui.view">
+        <field name="name">stock.lot.expired.list</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <list string="Expired Medicine Lots"
+                  decoration-danger="x_is_expired"
+                  create="false"
+                  delete="false">
+                <field name="product_id" string="Medicine"/>
+                <field name="name" string="Lot / Batch"/>
+                <field name="expiration_date" string="Expired On"/>
+                <field name="x_is_expired" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Expiring soon list view -->
+    <record id="view_expiring_soon_medicine_lots_list" model="ir.ui.view">
+        <field name="name">stock.lot.expiring.soon.list</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <list string="Medicines Expiring Soon"
+                  decoration-warning="x_is_expiring_soon"
+                  create="false"
+                  delete="false">
+                <field name="product_id" string="Medicine"/>
+                <field name="name" string="Lot / Batch"/>
+                <field name="expiration_date" string="Expiry Date"/>
+                <field name="x_is_expiring_soon" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action: Expired -->
     <record id="action_expired_medicine_lots" model="ir.actions.act_window">
         <field name="name">Expired Medicines</field>
         <field name="res_model">stock.lot</field>
         <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_expired_medicine_lots_list"/>
         <field name="domain">[
             ('product_id.is_medicine', '=', True),
-            ('is_expired', '=', True)
+            ('x_is_expired', '=', True)
         ]</field>
-        <field name="context">{'search_default_filter_expired': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No expired medicines found.
@@ -17,27 +52,41 @@
         </field>
     </record>
 
-    <!-- List View — shows only product name and lot name -->
-    <record id="view_expired_medicine_lots_list" model="ir.ui.view">
-        <field name="name">stock.lot.expired.list</field>
-        <field name="model">stock.lot</field>
-        <field name="arch" type="xml">
-            <list string="Expired Medicine Lots"
-                decoration-danger="is_expired == True"
-                create="false"
-                delete="false">
-                <field name="product_id" string="Medicine"/>
-                <field name="name" string="Lot / Batch"/>
-                <field name="expiration_date" string="Expired On"/>
-                <field name="is_expired" invisible="1"/>
-            </list>
+    <!-- Action: Expiring Soon -->
+    <record id="action_expiring_soon_medicine_lots" model="ir.actions.act_window">
+        <field name="name">Expiring Soon Medicines</field>
+        <field name="res_model">stock.lot</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_expiring_soon_medicine_lots_list"/>
+        <field name="domain">[
+            ('product_id.is_medicine', '=', True),
+            ('x_is_expiring_soon', '=', True)
+        ]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No medicines expiring within 30 days.
+            </p>
         </field>
     </record>
 
-    <!-- Menu item -->
-    <menuitem id="menu_expired_medicines"
-            name="Expired Medicines"
+        <!-- Menu item -->
+    <menuitem id="menu_expire_medicines"
+            name="Expiration Medicines"
             parent="menu_pharmacy_root"
-            action="action_expired_medicine_lots"
             sequence="30"/>
+
+    <!-- Menu item 1 -->
+    <menuitem id="menu_expired_medicines"
+              name="Expired Medicines"
+              parent="menu_expire_medicines"
+              action="action_expired_medicine_lots"
+              sequence="30"/>
+
+    <!-- Menu item 2 -->
+    <menuitem id="menu_expiring_soon_medicines"
+              name="Expiring Soon Medicines"
+              parent="menu_expire_medicines"
+              action="action_expiring_soon_medicine_lots"
+              sequence="31"/>
+
 </odoo>

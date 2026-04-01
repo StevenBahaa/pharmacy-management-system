@@ -274,13 +274,6 @@ class ProductTemplate(models.Model):
                 raise UserError("The Minimum Stock Quantity should not be negative")
 
 
-    @api.constrains('x_expiry_date')
-    def _check_expiry_date(self):
-        today = date.today()
-        for rec in self:
-            if rec.x_expiry_date and rec.x_expiry_date < today : 
-                raise UserError("The expire date cannot be in the past")
-
     @api.depends('qty_available', 'x_min_stock_qty')
     def _compute_is_low_stock(self):
         for rec in self:
