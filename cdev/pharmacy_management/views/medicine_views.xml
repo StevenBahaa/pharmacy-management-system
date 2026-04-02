@@ -141,10 +141,4 @@
         <field name="context">{'default_is_medicine': True}</field>
     </record>
 
-    <!-- Products -->
-    <menuitem id="menu_medicine_products"
-              name="Medicine Products"
-              parent="menu_pharmacy_root"
-              action="action_pharmacy_medicine"
-              sequence="11"/>
 </odoo>

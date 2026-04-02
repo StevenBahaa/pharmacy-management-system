@@ -3,4 +3,35 @@
     <menuitem id='menu_pharmacy_root'
                 name='Al-Shifa Pharmacy'
                 sequence="10"/>
+
+    <!-- Prescriptions — all groups -->
+    <menuitem id="menu_pharmacy_prescription"
+            name="Prescriptions"
+            parent="menu_pharmacy_root"
+            action="action_prescription"
+            groups="pharmacy_management.group_pharmacy_cashier"
+            sequence="10"/>
+
+    <!-- Medicine Products — all groups -->
+    <menuitem id="menu_medicine_products"
+            name="Medicine Products"
+            parent="menu_pharmacy_root"
+            action="action_pharmacy_medicine"
+            groups="pharmacy_management.group_pharmacy_cashier"
+            sequence="11"/>
+
+    <!-- Export — Manager only -->
+    <menuitem id="menu_export_prescriptions_excel"
+            name="Export Prescriptions to Excel"
+            parent="menu_pharmacy_root"
+            action="action_prescription_export_wizard"
+            groups="pharmacy_management.group_pharmacy_manager"
+            sequence="50"/>
+
+    <!-- Configuration — Manager only -->
+    <menuitem id="menu_pharmacy_configuration"
+            name="Configuration"
+            parent="menu_pharmacy_root"
+            groups="pharmacy_management.group_pharmacy_manager"
+            sequence="99"/>
 </odoo>

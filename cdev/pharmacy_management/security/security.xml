@@ -1,4 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    
+
+    <!-- Pharmacist: cannot delete products -->
+    <record id="rule_product_pharmacist_no_delete" model="ir.rule">
+        <field name="name">Pharmacist: Cannot Delete Products</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="groups" eval="[(4, ref('pharmacy_management.group_pharmacy_pharmacist'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Pharmacist: cannot delete product variants -->
+    <record id="rule_product_product_pharmacist_no_delete" model="ir.rule">
+        <field name="name">Pharmacist: Cannot Delete Product Variants</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="groups" eval="[(4, ref('pharmacy_management.group_pharmacy_pharmacist'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ── Manager — can see all prescriptions ───────────────────────── -->
+    <record id="rule_prescription_manager_all" model="ir.rule">
+        <field name="name">Manager: All Prescriptions</field>
+        <field name="model_id" ref="pharmacy_management.model_prescription"/>
+        <field name="groups" eval="[(4, ref('pharmacy_management.group_pharmacy_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Cashier cannot create/edit/delete medicines -->
+    <record id="rule_medicine_cashier_readonly" model="ir.rule">
+        <field name="name">Cashier: Read Only Medicines</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="groups" eval="[(4, ref('pharmacy_management.group_pharmacy_cashier'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
 </odoo>
