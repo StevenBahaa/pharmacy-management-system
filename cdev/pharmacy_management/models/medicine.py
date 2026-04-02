@@ -282,8 +282,7 @@ class ProductTemplate(models.Model):
             rec.x_is_low_stock = (
                 rec.is_medicine and rec.qty_available < rec.x_min_stock_qty
             )
-
-
+            
     @api.depends('prescription_status')
     def _compute_controlled_substance(self):
         controlled = {'ci', 'cii', 'ciii', 'civ', 'cv'}

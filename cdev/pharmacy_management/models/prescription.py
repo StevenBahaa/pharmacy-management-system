@@ -1,13 +1,14 @@
 from datetime import timedelta
 from odoo.exceptions import UserError
-from odoo import fields ,models ,api
+from odoo import fields ,models ,api , _
 
 class Prescription(models.Model):
     _name='prescription'
     _description='Prescription'
     _inherit=['mail.thread' , 'mail.activity.mixin']
 
-    name=fields.Char(string='Name' , readonly=True , default='New') 
+    name=fields.Char(string='Name' , readonly=True , default='New')
+    active = fields.Boolean(default=True) 
     
     patient_id = fields.Many2one(
     comodel_name='res.partner',
@@ -62,6 +63,17 @@ class Prescription(models.Model):
         store=True,
     )
 
+    is_cashier_only = fields.Boolean(compute="_compute_is_cashier_only")
+
+    def _compute_is_cashier_only(self):
+        for rec in self:
+            user = self.env.user
+            rec.is_cashier_only = (
+                user.has_group('pharmacy_management.group_pharmacy_cashier')
+                and not user.has_group('pharmacy_management.group_pharmacy_pharmacist')
+                and not user.has_group('pharmacy_management.group_pharmacy_manager')
+            )
+
     @api.model
     def create(self, vals_list):
         if vals_list.get('name', 'New') == 'New':
@@ -104,6 +116,15 @@ class Prescription(models.Model):
                             f"Lot '{line.lot_id.name}' of '{line.product_id.name}' "
                             f"is expired or expiring within 2 days ({lot_expiry})."
                         )
+                    
+            is_cashier_only = (
+                self.env.user.has_group('pharmacy_management.group_pharmacy_cashier')
+                and not self.env.user.has_group('pharmacy_management.group_pharmacy_pharmacist')
+                and not self.env.user.has_group('pharmacy_management.group_pharmacy_manager')
+            )
+
+            if is_cashier_only:
+                raise UserError("Cashier is not allowed to confirm prescriptions.")
 
             # ── Get discount from patient insurance program ──────────────
             discount = 0.0
@@ -211,5 +232,15 @@ class Prescription(models.Model):
         # Propagate discount to all lines
         for line in self.line_ids:
             line.discount = self.discount
-    
+
+    def write(self, vals):
+        if 'active' in vals:
+            user = self.env.user
+
+            is_manager = user.has_group('pharmacy_management.group_pharmacy_manager')
+
+            if not is_manager:
+                raise UserError(_("Only the manager can archive or unarchive prescriptions."))
+
+        return super().write(vals)
     

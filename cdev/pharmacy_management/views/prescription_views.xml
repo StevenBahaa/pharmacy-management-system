@@ -11,8 +11,12 @@
                 <field name="date"/>
                 <field name="patient_id"/>
                 <field name="doctor_id"/>
-                <field name="state" widget="badge"/>
+                <field name="state" widget="badge" 
+                                decoration-success="state == 'delivered'"
+                                decoration-warning="state == 'confirmed'"
+                                decoration-muted="state == 'draft'"/>
                 <field name="total_amount" sum="Total"/>
+                <field name="active" optional="hide"/>
             </list>
         </field>
     </record>
@@ -25,13 +29,18 @@
                 <header>
                     <button name="action_print_invoice" string="Create Invoice" type="object"
                         invisible="state not in ('confirmed' , 'delivered')" class="btn-primary"/>
+
                     <button name="action_confirm" string="Confirm" type="object"
-                            invisible="state != 'draft'" class="btn-primary"/>
+                        invisible="state != 'draft'" class="btn-primary"
+                        groups="pharmacy_management.group_pharmacy_pharmacist,pharmacy_management.group_pharmacy_manager"/>
+
                     <button name="action_deliver" string="Deliver" type="object"
-                            invisible="state != 'confirmed'" class="btn-primary"/>
+                        invisible="state != 'confirmed'" class="btn-primary"
+                        groups="pharmacy_management.group_pharmacy_cashier,pharmacy_management.group_pharmacy_pharmacist,pharmacy_management.group_pharmacy_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,delivered"/>
                 </header>
                 <sheet>
+                    <field name="active" invisible="1"/>
                     <div class="oe_title">
                         <label for="name" string="Prescription Reference"/>
                         <h1>
@@ -42,11 +51,12 @@
                     </div>
                     <group>
                         <group string="Personal Information">
-                            <field name="patient_id" required="1" readonly="state != 'draft'"/>
-                            <field name="doctor_id" readonly="state != 'draft'"/>
+                            <field name="is_cashier_only" invisible="1"/>
+                            <field name="patient_id" required="1" readonly="state != 'draft' or is_cashier_only"/>
+                            <field name="doctor_id" readonly="state != 'draft' or is_cashier_only"/>
                         </group>
                         <group string="Medical Information">
-                            <field name="date" readonly="state != 'draft'"/>
+                        <field name="date" readonly="state != 'draft' or is_cashier_only"/>
                             <field name="total_amount" readonly="1"/>
                         </group>
                         <group string="Financial Information">
@@ -59,7 +69,7 @@
                     </group>
                     <notebook>
                         <page name="lines" string="Medicine Lines">
-                            <field name="line_ids" readonly="state != 'draft'">
+                        <field name="line_ids" readonly="state != 'draft' or is_cashier_only">
                                 <list editable="bottom">
                                     <field name="product_id" required="1"/>
                                     <field name="lot_id" domain="[('product_id.product_tmpl_id', '=', product_id)]"/>
@@ -102,6 +112,8 @@
                     <filter string="Patient" name="group_patient" context="{'group_by':'patient_id'}"/>
                     <filter string="Doctor" name="group_doctor" context="{'group_by':'doctor_id'}"/>
                     <filter string="Status" name="group_state" context="{'group_by':'state'}"/>
+                    <filter string="Active" name="active_records" domain="[('active', '=', True)]"/>
+                    <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
                 </group>
             </search>
         </field>

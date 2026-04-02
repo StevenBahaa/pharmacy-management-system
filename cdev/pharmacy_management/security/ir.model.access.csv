@@ -1,7 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_prescription_manager,prescription.manager,model_prescription,pharmacy_management.group_pharmacy_manager,1,1,1,1
 access_prescription_pharmacist,prescription.pharmacist,model_prescription,pharmacy_management.group_pharmacy_pharmacist,1,1,1,0
-access_prescription_cashier,prescription.cashier,model_prescription,pharmacy_management.group_pharmacy_cashier,1,0,0,0
+access_prescription_cashier,prescription.cashier,model_prescription,pharmacy_management.group_pharmacy_cashier,1,1,0,0
 access_prescription_line_manager,prescription.line.manager,model_prescription_line,pharmacy_management.group_pharmacy_manager,1,1,1,1
 access_prescription_line_pharmacist,prescription.line.pharmacist,model_prescription_line,pharmacy_management.group_pharmacy_pharmacist,1,1,1,0
 access_prescription_line_cashier,prescription.line.cashier,model_prescription_line,pharmacy_management.group_pharmacy_cashier,1,0,0,0
