@@ -125,6 +125,8 @@ class ProductTemplate(models.Model):
         help='Enable pharmaceutical fields for this product.',
     )
 
+
+
     medicine_category_id = fields.Many2one(
         'product.category',
         string='Medicine Category',
@@ -434,3 +436,18 @@ class ProductTemplate(models.Model):
                 raise ValidationError(
                     _('Lot/Batch tracking is mandatory for controlled substances.')
                     )
+            
+    def unlink(self):
+        for rec in self:
+            if rec.is_medicine:
+                is_manager = self.env.user.has_group(
+                    'pharmacy_management.group_pharmacy_manager'
+                )
+                is_admin = self.env.user._is_admin()
+
+                if not is_manager and not is_admin:
+                    raise UserError(
+                        f"You do not have permission to delete medicine "
+                        f"'{rec.name}'. Only Managers and Administrators can delete medicines."
+                    )
+        return super().unlink()

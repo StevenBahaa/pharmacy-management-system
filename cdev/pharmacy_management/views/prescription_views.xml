@@ -33,8 +33,11 @@
                 </header>
                 <sheet>
                     <div class="oe_title">
+                        <label for="name" string="Prescription Reference"/>
                         <h1>
-                            <field name="name" readonly="1"/>
+                            <field name="name"
+                                placeholder="Will be generated on save"
+                                readonly="1"/>
                         </h1>
                     </div>
                     <group>
@@ -103,10 +106,4 @@
             </search>
         </field>
     </record>
-
-    <menuitem id="menu_pharmacy_prescription"
-              name="Prescriptions"
-              parent="menu_pharmacy_root"
-              action="action_prescription"
-              sequence="10"/>
 </odoo>

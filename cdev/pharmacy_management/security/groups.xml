@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── Module Category ───────────────────────────────────────────── -->
+    <record id="module_category_pharmacy" model="ir.module.category">
+        <field name="name">Al-Shifa Pharmacy</field>
+        <field name="description">Pharmacy Management System roles</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <!-- ── Cashier ───────────────────────────────────────────────────── -->
+    <record id="group_pharmacy_cashier" model="res.groups">
+        <field name="name">Cashier</field>
+        <field name="category_id" ref="module_category_pharmacy"/>
+        <field name="comment">
+            Can only view medicines and prescriptions.
+        </field>
+    </record>
+
+    <!-- ── Pharmacist ────────────────────────────────────────────────── -->
+    <record id="group_pharmacy_pharmacist" model="res.groups">
+        <field name="name">Pharmacist</field>
+        <field name="category_id" ref="module_category_pharmacy"/>
+        <field name="implied_ids" eval="[(4, ref('group_pharmacy_cashier'))]"/>
+        <field name="comment">
+            Can create and edit medicines and prescriptions.
+            Can only see their own prescriptions.
+        </field>
+    </record>
+
+    <!-- ── Manager ───────────────────────────────────────────────────── -->
+    <record id="group_pharmacy_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="category_id" ref="module_category_pharmacy"/>
+        <field name="implied_ids" eval="[(4, ref('group_pharmacy_pharmacist'))]"/>
+        <field name="comment">
+            Full access to all pharmacy features.
+        </field>
+    </record>
+
+</odoo>
